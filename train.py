@@ -8,14 +8,20 @@ from datasets import LIDCdataset
 from tools import makeLogFile,writeLog,dice,dice_loss,binary_accuracy
 import time
 import pdb
+from carbontracker.tracker import CarbonTracker
+from carbontracker import parser
+import os
+import shutil
 
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 
-torch.manual_seed(32)
+torch.manual_seed(1)
 # Globally load device identifier
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(device)
+mFile = 'model_frame.csv'
+
 def evaluate(loader):
     ### Evaluation function for validation/testing
     vl_acc = torch.Tensor([0.]).to(device)
@@ -42,18 +48,6 @@ def evaluate(loader):
     vl_loss = vl_loss.item()/len(loader)
 
     return vl_acc, vl_loss
-
-# Get all pretrained models
-models = timm.list_models(pretrained=True)
-
-print('Found %d pretrained models'%len(models))
-# Get all unique arch.
-
-uniq = [m.split('_')[0] for m in models]
-uniq = np.unique(uniq)
-M = len(uniq)
-
-print('Found %d unique pretrained models'%len(uniq))
 
 # Load dataset
 dataset = LIDCdataset()
@@ -93,76 +87,98 @@ nTest = len(loader_test)
 loss_fun = torch.nn.BCEWithLogitsLoss()
 accuracy = binary_accuracy
 num_epochs = 10
-lr = 1e-4
+lr = 5e-4
 
-model = timm.create_model(models[0], pretrained=True,in_chans=nCh,num_classes=1)
-optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-model.to(device)
-nParam = sum(p.numel() for p in model.parameters() if p.requires_grad)
-print("Number of parameters:%d"%(nParam))
-print(f"Using Adam w/ learning rate = {lr:.1e}")
+df = pd.read_csv(mFile)
+df = df.sort_values(by=['num_param'])
+df = df.reset_index(drop=True)
+df[['memT','memR','memA','memM','energy','co2','train_time','infer_time']] = 0
 
-# Miscellaneous initialization
-start_time = time.time()
-maxAuc = -1
-minLoss = 1e3
-convIter = 0
+cols = ['test_%02d'%d for d in range(num_epochs)]
+df[cols] = 0
+models = df.model.values
 
-# Training starts here
-for epoch in range(num_epochs):
-#    tracker.epoch_start()
-    running_loss = 0.
-    running_acc = 0.
-    t = time.time()
-    model.train()
-    predsNp = []
-    labelsNp = []
-    bNum = 0
-    for i, (inputs, labels) in enumerate(loader_train):
+for mIdx in range(df.shape[0]):
+    print('Using ',models[mIdx])
+    model = timm.create_model(models[mIdx], pretrained=True,in_chans=nCh,num_classes=1)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    torch.cuda.empty_cache()
+    model.to(device)
 
 
-        inputs = inputs.to(device)
-        labels = labels.to(device)
+    # Instantiate Carbontracker
+    logLoc = './logs/'+models[mIdx]
+    if not os.path.exists(logLoc):
+        os.mkdir(logLoc)
+    tracker = CarbonTracker(epochs=num_epochs,
+            log_dir=logLoc,monitor_epochs=-1)
+    infTime = []
+    # Miscellaneous initialization
+    start_time = time.time()
 
-        for p in model.parameters():
-            p.grad = None
-        bNum += 1
-        b = inputs.shape[0]
+    # Training starts here
+    for epoch in range(num_epochs):
+        tracker.epoch_start()
+        running_loss = 0.
+        running_acc = 0.
+        t = time.time()
+        model.train()
+        predsNp = []
+        labelsNp = []
+        bNum = 0
+        for i, (inputs, labels) in enumerate(loader_train):
 
-        scores = model(inputs)
-        #pdb.set_trace()
-        scores = scores.view(labels.shape).type_as(labels)
-        loss = loss_fun(scores, labels)
 
-        # Backpropagate and update parameters
-        loss.backward()
-        optimizer.step()
+            inputs = inputs.to(device)
+            labels = labels.to(device)
 
+            for p in model.parameters():
+                p.grad = None
+            bNum += 1
+            b = inputs.shape[0]
+
+            scores = model(inputs)
+            #pdb.set_trace()
+            scores = scores.view(labels.shape).type_as(labels)
+            loss = loss_fun(scores, labels)
+
+            # Backpropagate and update parameters
+            loss.backward()
+            optimizer.step()
+
+            with torch.no_grad():
+                preds = torch.sigmoid(scores.clone())
+                running_acc += (accuracy(labels,preds)).item()
+                running_loss += loss.item()
+
+            if (i+1) % 10 == 1:
+                print ('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}'
+                       .format(epoch+1, num_epochs, i+1, nTrain, loss.item()))
+
+        tr_acc = running_acc/nTrain
+
+        if epoch == 1:
+            df.loc[mIdx,'memT'] = torch.cuda.get_device_properties(0).total_memory/1e9
+            df.loc[mIdx,'memR'] = torch.cuda.memory_reserved(0)/1e9
+            df.loc[mIdx,'memA'] = torch.cuda.memory_allocated(0)/1e9
+            df.loc[mIdx,'memM'] = torch.cuda.max_memory_allocated(0)/1e9
+
+        # Evaluate on Validation set
         with torch.no_grad():
-            preds = torch.sigmoid(scores.clone())
-            running_acc += (accuracy(labels,preds)).item()
-            running_loss += loss.item()
 
-        if (i+1) % 10 == 1:
-            print ('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}'
-                   .format(epoch+1, num_epochs, i+1, nTrain, loss.item()))
+            iTime = time.time()
+            best_ts_acc, best_ts_loss = evaluate(loader=loader_test)
+            infTime.append(time.time()-iTime)
+            df.loc[mIdx,'test_%02d'%epoch] = best_ts_acc
+            print('Test Set Loss:%.4f\t Acc:%.4f'%(best_ts_loss, best_ts_acc))
+        tracker.epoch_end()
+    tracker.stop()
+    df.loc[mIdx,'train_time'] = time.time()-t
+    df.loc[mIdx,'inf_time'] = np.mean(infTime)
 
-    tr_acc = running_acc/nTrain
+    #pdb.set_trace()
+    log = parser.parse_all_logs(log_dir=logLoc)
+    df.loc[mIdx,'energy'] = log[-1]['actual']['energy (kWh)'] 
+    df.loc[mIdx,'co2'] = log[-1]['actual']['co2eq (g)'] 
 
-    if epoch == 1:
-        t = torch.cuda.get_device_properties(0).total_memory/1e9
-        r = torch.cuda.memory_reserved(0)/1e9
-        a = torch.cuda.memory_allocated(0)/1e9
-        m = torch.cuda.max_memory_allocated(0)/1e9
-
-    # Evaluate on Validation set
-    with torch.no_grad():
-
-        best_ts_acc, best_ts_loss = evaluate(loader=loader_test)
-        print('Test Set Loss:%.4f\t Acc:%.4f'%(best_ts_loss, best_ts_acc))
-#        with open(logFile,"a") as f:
-#            print('Test Set Loss:%.4f\tAcc:%.4f'%(best_ts_loss, best_ts_acc),file=f)
-#    writeLog(logFile, epoch, running_loss/bNum, tr_acc,
-#            vl_loss, vl_acc, ts_loss, ts_acc,  time.time()-t)
-
-
+    df.to_csv('model_results.csv',index=False)
