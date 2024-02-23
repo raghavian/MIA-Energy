@@ -12,6 +12,23 @@ import pandas as pd
 from numpy import random
 from torch.nn.functional import avg_pool2d
 
+class DermaMNIST(Dataset):
+     def __init__(self, data_loc = '/home/image/raghav/datasets/medMNIST/DermaMNIST/',split='train', 
+             transform=None):
+          super().__init__()
+
+#          pdb.set_trace()
+          self.transform = transform
+          self.data, self.targets = torch.load(data_loc+split+'.pt')
+
+     def __len__(self):
+          return len(self.targets)
+
+     def __getitem__(self, index):
+          image, label = self.data[index], self.targets[index]
+          if self.transform is not None:
+               image = self.transform(image)
+          return image, label
 
 class LIDCdataset(Dataset):
      def __init__(self, rater=4, data_file = '/home/image/raghav/datasets/lidc_classification/lidc_class256.pt', 

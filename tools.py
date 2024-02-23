@@ -319,8 +319,8 @@ def mad(preds,labels,maxAge=228,minAge=1):
      preds = np.round(preds*diff+minAge)
      return np.mean(np.abs(preds -labels))
 
-def multiClassAccuracy(output, labels):
-     pdb.set_trace()
+def multiClassAccuracy(labels,output):
+#     pdb.set_trace()
      preds = output.argmax(1)
 #     preds = (output > (1.0/labels.shape[1])).type_as(labels)
      correct = (preds == labels.view(-1))

@@ -4,8 +4,8 @@ from torchvision import transforms, datasets
 from torch.utils.data import SubsetRandomSampler,random_split, DataLoader
 import numpy as np
 import pandas as pd
-from datasets import LIDCdataset
-from tools import makeLogFile,writeLog,dice,dice_loss,binary_accuracy
+from datasets import LIDCdataset, DermaMNIST
+from tools import makeLogFile,writeLog,dice,dice_loss,multiClassAccuracy
 import time
 import pdb
 from carbontracker.tracker import CarbonTracker
@@ -37,10 +37,10 @@ def evaluate(loader):
         labels = labels.to(device)
         # Inference
         scores = model(inputs)
-        scores = scores.view(labels.shape).type_as(labels)
+#        scores = scores.view(labels.shape).type_as(labels)
 
         preds = torch.sigmoid(scores.clone())
-        loss = loss_fun(scores, labels)
+        loss = loss_fun(scores, labels.squeeze())
         vl_loss += loss
         vl_acc += accuracy(labels,preds)
 
@@ -51,43 +51,41 @@ def evaluate(loader):
     return vl_acc, vl_loss
 
 # Load dataset
-dataset = LIDCdataset()
+train_set = DermaMNIST(split='train')
+valid_set = DermaMNIST(split='valid')
+test_set = DermaMNIST(split='test')
 
-x = dataset[0][0]
+x = train_set[0][0]
 dim = x.shape[-1]
 nCh = x.shape[0]
 print('Using %d size of images'%dim)
-N = len(dataset)
-
-train_sampler = SubsetRandomSampler(np.arange(int(0.6*N)))
-valid_sampler = SubsetRandomSampler(np.arange(int(0.6*N),int(0.8*N)))
-test_sampler = SubsetRandomSampler(np.arange(int(0.8*N),N))
+N = len(train_set)
 
 # Initiliaze input dimensions
-num_train = len(train_sampler)
-num_valid = len(valid_sampler)
-num_test = len(test_sampler)
+num_train = len(train_set)
+num_valid = len(valid_set)
+num_test = len(test_set)
 print("Num. train = %d, Num. val = %d, Num. test = %d"%(num_train,num_valid,num_test))
 
 batch_size = 32
 # Assign script args to vars
 
 # Initialize dataloaders
-loader_train = DataLoader(dataset = dataset, drop_last=False,num_workers=0,
-        batch_size=batch_size, pin_memory=True,sampler=train_sampler)
-loader_valid = DataLoader(dataset = dataset, drop_last=True,num_workers=0,
-        batch_size=batch_size, pin_memory=True,sampler=valid_sampler)
-loader_test = DataLoader(dataset = dataset, drop_last=True,num_workers=0,
-        batch_size=batch_size, pin_memory=True,sampler=test_sampler)
+loader_train = DataLoader(dataset = train_set, drop_last=False,num_workers=0,
+        batch_size=batch_size, pin_memory=True)
+loader_valid = DataLoader(dataset = valid_set, drop_last=True,num_workers=0,
+        batch_size=batch_size, pin_memory=True)
+loader_test = DataLoader(dataset = test_set, drop_last=True,num_workers=0,
+        batch_size=batch_size, pin_memory=True)
 
 nValid = len(loader_valid)
 nTrain = len(loader_train)
 nTest = len(loader_test)
 
 # Initialize loss and metrics
-loss_fun = torch.nn.BCEWithLogitsLoss()
-accuracy = binary_accuracy
-num_epochs = 2
+loss_fun = torch.nn.CrossEntropyLoss()
+accuracy = multiClassAccuracy
+num_epochs = 10
 lr = 5e-4
 
 df = pd.read_csv(mFile)
@@ -100,7 +98,7 @@ args = parser.parse_args()
 mIdx = args.mIdx
 print('Using ',models[mIdx])
 
-model = timm.create_model(models[mIdx],pretrained=True,in_chans=nCh,num_classes=1)
+model = timm.create_model(models[mIdx],pretrained=True,in_chans=nCh,num_classes=7)
 optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 torch.cuda.empty_cache()
 model.to(device)
@@ -137,10 +135,10 @@ for epoch in range(num_epochs):
         bNum += 1
         b = inputs.shape[0]
 
-        #pdb.set_trace()
+#        pdb.set_trace()
         scores = model(inputs)
-        scores = scores.view(labels.shape).type_as(labels)
-        loss = loss_fun(scores, labels)
+#        scores = scores.view(labels.shape).type_as(labels)
+        loss = loss_fun(scores, labels.squeeze())
 
         # Backpropagate and update parameters
         loss.backward()
