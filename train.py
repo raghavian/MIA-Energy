@@ -86,12 +86,12 @@ nTest = len(loader_test)
 # Initialize loss and metrics
 loss_fun = torch.nn.BCEWithLogitsLoss()
 accuracy = binary_accuracy
-num_epochs = 10
+num_epochs = 1
 lr = 5e-4
 
 df = pd.read_csv(mFile)
 df = df.sort_values(by=['num_param'])
-df = df.reset_index(drop=True)
+df = df.reset_index(drop=True)[:10]
 df[['memT','memR','memA','memM','energy','co2','train_time','infer_time']] = 0
 
 cols = ['test_%02d'%d for d in range(num_epochs)]
@@ -100,7 +100,10 @@ models = df.model.values
 
 for mIdx in range(df.shape[0]):
     print('Using ',models[mIdx])
-    model = timm.create_model(models[mIdx], pretrained=True,in_chans=nCh,num_classes=1)
+
+    model = timm.create_model(models[mIdx])#, pretrained=True,in_chans=nCh,num_classes=1,input_size=(nCh,dim,dim))
+    pdb.set_trace()
+    k = [m for m in model.keys()]
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     torch.cuda.empty_cache()
     model.to(device)
@@ -137,8 +140,8 @@ for mIdx in range(df.shape[0]):
             bNum += 1
             b = inputs.shape[0]
 
-            scores = model(inputs)
             #pdb.set_trace()
+            scores = model(inputs)
             scores = scores.view(labels.shape).type_as(labels)
             loss = loss_fun(scores, labels)
 
@@ -175,7 +178,7 @@ for mIdx in range(df.shape[0]):
     tracker.stop()
     df.loc[mIdx,'train_time'] = time.time()-t
     df.loc[mIdx,'inf_time'] = np.mean(infTime)
-
+    df.loc[mIdx,'tr_acc'] = tr_acc
     #pdb.set_trace()
     log = parser.parse_all_logs(log_dir=logLoc)
     df.loc[mIdx,'energy'] = log[-1]['actual']['energy (kWh)'] 

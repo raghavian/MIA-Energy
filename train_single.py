@@ -182,3 +182,4 @@ df.loc[mIdx,'energy'] = log[-1]['actual']['energy (kWh)']
 df.loc[mIdx,'co2'] = log[-1]['actual']['co2eq (g)'] 
 
 df.to_csv(mFile,index=False)
+torch.save(model.state_dict(),'models/'+models[mIdx]+'.pt')
