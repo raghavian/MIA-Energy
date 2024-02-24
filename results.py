@@ -5,6 +5,10 @@ import matplotlib
 from cycler import cycler
 import numpy as np
 import pdb
+import matplotlib._color_data as mcd
+cmap = matplotlib.cm.get_cmap('viridis_r')
+
+colors = [cmap(i) for i in np.linspace(0,1,11)]
 
 params = {'font.size': 14,
 #          'font.weight': 'bold',
@@ -13,7 +17,6 @@ params = {'font.size': 14,
           'axes.labelweight':'bold',
           'axes.titleweight':'bold',
           'legend.fontsize': 14,
-          'image.cmap' : 'viridis',
          }
 matplotlib.rcParams.update(params)
 
@@ -21,9 +24,7 @@ r = 4
 c = 5
 
 for data in ['derma_pt','lidc','derma']:
-#    sns.set_palette('deep')
     sns.set_palette("deep")
-#    sns.cubehelix_palette(start=.5, rot=-.75, as_cmap=True)
 
     print('Processing '+data)
     df = pd.read_csv('model_results_'+data+'.csv')
@@ -94,46 +95,21 @@ for data in ['derma_pt','lidc','derma']:
     plt.xlabel('Inf. Time')
     plt.legend(loc='lower right')
 
-#    plt.subplot(r,c,11)
-#    plt.plot(lidcDf.test_00,df.test_00,'.',label='Ep.1')
-#    plt.plot(lidcDf.test_09,df.test_09,'.',label='Ep.10')
-
-#    plt.xlabel('LIDC')
-#    plt.ylabel('Derma')
-#    plt.legend(loc='lower right')
-
-#    plt.subplot(r,c,12)
-#    plt.plot(lidcDf.test_00,df.test_00,'.',label='Ep.1')
-#    plt.plot(lidcDf.test_09,df.test_09,'.',label='Ep.1')
-
-    #plt.ylim([0.4,0.75])
-#    plt.xlabel('LIDC')
-#    plt.ylabel('Derma')
-#    plt.legend(loc='lower right')
-
-
     sns.set_palette('viridis')
     ax = fig.add_subplot(gs[2,:])
     for i in range(10):
         col = 'test_%02d'%i
-        plt.scatter(df.model, df[col],label='Ep.%02d'%(i+1),alpha=0.5+(0.5-0.05*i),s=5*(10-i))
-    if data == 'derma':
+        plt.scatter(df.model, df[col],label='Ep.%02d'%(i+1),color=colors[i])#,alpha=0.5+(0.5-0.05*i),s=5*(10-i))
+    if 'derma' in data:
         plt.ylim([0.49,0.91])
-    #    plt.scatter(df.model, df.test_01,label='Ep.2')
-    #    plt.scatter(df.model, df.test_04,label='Ep.3')
-    #plt.scatter(df.model, df.test_09,label='Ep.10',marker='s',s=20)
 
     plt.xticks('')
     plt.legend()
-    #plt.xticks(rotation=90)
 
 
     ax = fig.add_subplot(gs[3,:])
     plt.scatter(df.model, df.num_param)
-    #plt.scatter(df.model, df.memR/df.memR.max(),marker='d')
-    #plt.scatter(df.model, df.energy/df.energy.max(),marker='^')
 
     plt.xticks(rotation=90,fontsize=10)
 
-    #plt.tight_layout()
     plt.savefig('results_'+data+'.pdf',dpi=300)
