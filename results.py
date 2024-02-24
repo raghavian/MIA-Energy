@@ -1,6 +1,21 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import matplotlib
+from cycler import cycler
+num_colors = 100
+
+params = {'font.size': 14,
+#          'font.weight': 'bold',
+          'axes.labelsize':14,
+          'axes.titlesize':14,
+          'axes.labelweight':'bold',
+          'axes.titleweight':'bold',
+          'legend.fontsize': 14,
+          'image.cmap' : 'viridis',
+         }
+matplotlib.rcParams.update(params)
+sns.set_palette('viridis')
 
 df = pd.read_csv('model_results.csv')
 lidcDf = pd.read_csv('model_results_lidc.csv')
@@ -11,11 +26,13 @@ df = df[df.memT > 0]
 M = df.shape[0]
 print('Found %d models with data'%M)
 
-plt.figure(figsize=(20,12))
-
-r = 3
+r = 5
 c = 5
 
+fig = plt.figure(figsize=(r*5,c*4),constrained_layout=True)
+gs = fig.add_gridspec(r,c)
+
+ax = fig.add_subplot(gs[0,0])
 plt.subplot(r,c,1)
 sns.scatterplot(data=df,x='num_param',y='train_time')
 #plt.plot(df.num_param,df.train_time,'x')
@@ -101,7 +118,23 @@ plt.xlabel('LIDC')
 plt.ylabel('Derma')
 plt.legend(loc='lower right')
 
+ax = fig.add_subplot(gs[3,:])
+for i in range(10):
+    col = 'test_%02d'%i
+    plt.scatter(df.model, df[col],label='Ep.%02d'%i,alpha=0.5+(0.5-0.05*i),s=5*(10-i))
+plt.ylim([0.49,0.91])
+#    plt.scatter(df.model, df.test_01,label='Ep.2')
+#    plt.scatter(df.model, df.test_04,label='Ep.3')
+#plt.scatter(df.model, df.test_09,label='Ep.10',marker='s',s=20)
+
+plt.xticks('')
+plt.legend()
+#plt.xticks(rotation=90)
 
 
-plt.tight_layout()
+ax = fig.add_subplot(gs[4,:])
+plt.scatter(df.model, df.num_param)
+plt.xticks(rotation=90,fontsize=10)
+
+#plt.tight_layout()
 plt.savefig('results.pdf',dpi=300)
