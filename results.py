@@ -23,12 +23,14 @@ matplotlib.rcParams.update(params)
 r = 4
 c = 5
 
+allDf = {}
 for data in ['derma_pt','lidc','derma']:
     sns.set_palette("deep")
 
     print('Processing '+data)
     df = pd.read_csv('model_results_'+data+'.csv')
     df = df[df.memT > 0]
+    allDf[data] = df
     M = df.shape[0]
     print('Found %d models with data'%M)
 
@@ -113,3 +115,43 @@ for data in ['derma_pt','lidc','derma']:
     plt.xticks(rotation=90,fontsize=10)
 
     plt.savefig('results_'+data+'.pdf',dpi=300)
+
+plt.clf()
+### Combined results
+plt.clf()
+fig = plt.figure(figsize=(r*5,c*3),constrained_layout=True)
+gs = fig.add_gridspec(r,c)
+
+ax = fig.add_subplot(gs[0,:])
+xAxis = np.arange(M)
+plt.title('Ep.1')
+plt.plot(xAxis,np.zeros(len(xAxis)),'--',c='grey')
+plt.scatter(np.arange(M),allDf['derma_pt']['test_00']-allDf['derma']['test_00'], label='Ep.1',marker='^')
+#plt.xticks('')
+plt.ylim([-0.1,0.25])
+
+ax = fig.add_subplot(gs[1,:])
+plt.title('Ep.5')
+plt.plot(xAxis,np.zeros(len(xAxis)),'--',c='grey')
+plt.scatter(np.arange(M), allDf['derma_pt']['test_04']-allDf['derma']['test_04'], label='Ep.5',marker='^')
+#plt.xticks('')
+plt.ylim([-0.1,0.25])
+
+ax = fig.add_subplot(gs[2,:])
+plt.title('Ep.10')
+plt.plot(xAxis,np.zeros(len(xAxis)),'--',c='grey')
+plt.scatter(np.arange(M), allDf['derma_pt']['test_09']-allDf['derma']['test_09'], label='Ep.10',marker='^')
+plt.ylim([-0.1,0.25])
+#plt.xticks('')
+
+
+ax = fig.add_subplot(gs[3,:])
+
+plt.scatter(allDf['derma'].model, allDf['derma']['test_00'],label='Ep.1',marker='^')
+plt.scatter(allDf['derma_pt'].model, allDf['derma_pt']['test_00'],label='Ep.1',color=colors[4])
+plt.legend()
+plt.xticks(rotation=90,fontsize=10)
+plt.savefig('group_results.pdf',dpi=300)
+
+
+
