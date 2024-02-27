@@ -39,7 +39,9 @@ class DermaMNIST(Dataset):
           return image, label
 
 class LIDCdataset(Dataset):
-     def __init__(self, rater=4, data_file = '/home/image/raghav/datasets/lidc_classification/lidc_class256.pt', 
+     def __init__(self, rater=4, \
+             data_file = '/home/image/raghav/datasets/lidc_classification/lidc_class256.pt',\
+             num_data = -1,
              transform=None):
           super().__init__()
 
@@ -52,6 +54,10 @@ class LIDCdataset(Dataset):
           else:
               self.targets = self.targets[:,rater].type(torch.FloatTensor)
           self.data = self.data.type(torch.FloatTensor)/255.0
+          if num_data != -1:
+              print('Using subset of data')
+              idx = torch.randperm(len(self.targets))
+              self.data, self.targets = self.data[idx[:num_data]], self.targets[idx[:num_data]] 
 
      def __len__(self):
           return len(self.targets)
