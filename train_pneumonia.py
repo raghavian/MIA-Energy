@@ -4,8 +4,9 @@ from torchvision import transforms, datasets
 from torch.utils.data import SubsetRandomSampler,random_split, DataLoader
 import numpy as np
 import pandas as pd
-from datasets import LIDCdataset, DermaMNIST
-from tools import makeLogFile,writeLog,dice,dice_loss,multiClassAccuracy
+from datasets import LIDCdataset, PneumoniaMNIST
+from tools import makeLogFile,writeLog,dice,dice_loss,binary_accuracy
+
 import time
 import pdb
 from carbontracker.tracker import CarbonTracker
@@ -40,7 +41,7 @@ def evaluate(loader):
 #        scores = scores.view(labels.shape).type_as(labels)
 
         preds = torch.sigmoid(scores.clone())
-        loss = loss_fun(scores, labels.squeeze())
+        loss = loss_fun(scores, labels)
         vl_loss += loss
         vl_acc += accuracy(labels,preds)
 
@@ -51,9 +52,9 @@ def evaluate(loader):
     return vl_acc, vl_loss
 
 # Load dataset
-train_set = DermaMNIST(split='train')
-valid_set = DermaMNIST(split='valid')
-test_set = DermaMNIST(split='test')
+train_set = PneumoniaMNIST(split='train')
+valid_set = PneumoniaMNIST(split='valid')
+test_set = PneumoniaMNIST(split='test')
 
 x = train_set[0][0]
 dim = x.shape[-1]
@@ -83,8 +84,9 @@ nTrain = len(loader_train)
 nTest = len(loader_test)
 
 # Initialize loss and metrics
-loss_fun = torch.nn.CrossEntropyLoss()
-accuracy = multiClassAccuracy
+loss_fun = torch.nn.BCEWithLogitsLoss()
+accuracy = binary_accuracy
+
 num_epochs = 10
 lr = 5e-4
 
@@ -101,7 +103,7 @@ if df.loc[mIdx,'memT'] == 0:
 
     print('Using ',models[mIdx])
 
-    model = timm.create_model(models[mIdx],pretrained=True,in_chans=nCh,num_classes=7)
+    model = timm.create_model(models[mIdx],pretrained=True,in_chans=nCh,num_classes=1)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     torch.cuda.empty_cache()
     model.to(device)
@@ -141,7 +143,7 @@ if df.loc[mIdx,'memT'] == 0:
     #        pdb.set_trace()
             scores = model(inputs)
     #        scores = scores.view(labels.shape).type_as(labels)
-            loss = loss_fun(scores, labels.squeeze())
+            loss = loss_fun(scores, labels)
 
             # Backpropagate and update parameters
             loss.backward()

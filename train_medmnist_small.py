@@ -51,7 +51,7 @@ def evaluate(loader):
     return vl_acc, vl_loss
 
 # Load dataset
-train_ratio = 0.1
+train_ratio = 0.01
 train_set = DermaMNIST(split='train')
 num_train = int(len(train_set)*train_ratio)
 train_set = DermaMNIST(split='train',num_data=num_train)
@@ -88,7 +88,7 @@ nTest = len(loader_test)
 loss_fun = torch.nn.CrossEntropyLoss()
 accuracy = multiClassAccuracy
 num_epochs = 10
-lr = 5e-4
+lr = 5e-3
 
 df = pd.read_csv(mFile)
 
