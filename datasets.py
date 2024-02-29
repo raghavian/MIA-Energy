@@ -13,6 +13,32 @@ from numpy import random
 from torch.nn.functional import avg_pool2d
 
 class DermaMNIST(Dataset):
+     def __init__(self, data_loc = '/home/image/raghav/datasets/medMNIST/PneumoniaMNIST/',\
+             split='train',\
+             num_data = -1,\
+             transform=None):
+          super().__init__()
+
+#          pdb.set_trace()
+          self.transform = transform
+          self.data, self.targets = torch.load(data_loc+split+'.pt')
+          if num_data != -1:
+              print('Using subset of data')
+              idx = torch.randperm(len(self.targets))
+
+              self.data, self.targets = self.data[idx[:num_data]], self.targets[idx[:num_data]] 
+
+
+     def __len__(self):
+          return len(self.targets)
+
+     def __getitem__(self, index):
+          image, label = self.data[index], self.targets[index]
+          if self.transform is not None:
+               image = self.transform(image)
+          return image, label
+
+class DermaMNIST(Dataset):
      def __init__(self, data_loc = '/home/image/raghav/datasets/medMNIST/DermaMNIST/',\
              split='train',\
              num_data = -1,\
