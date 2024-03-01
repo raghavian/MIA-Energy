@@ -7,6 +7,7 @@ import numpy as np
 import pdb
 import matplotlib._color_data as mcd
 cmap = matplotlib.cm.get_cmap('viridis_r')
+import torch
 
 colors = [cmap(i) for i in np.linspace(0,1,11)]
 
@@ -24,7 +25,7 @@ r = 4
 c = 5
 
 allDf = {}
-for data in ['derma_pt','lidc','lidc_small','derma','derma_small','derma_smallest','pneumonia']:
+for data in ['derma_pt','lidc','lidc_small','derma','derma_small','derma_smallest','pneumonia','pneumonia_small']:
     sns.set_palette("deep")
 
     print('Processing '+data)
@@ -117,7 +118,7 @@ for data in ['derma_pt','lidc','lidc_small','derma','derma_small','derma_smalles
 
     plt.savefig('results_'+data+'.pdf',dpi=300)
 
-plt.clf()
+torch.save(allDf,'allDf.pt')
 ### Combined results
 plt.clf()
 fig = plt.figure(figsize=(r*5,c*3),constrained_layout=True)
@@ -129,21 +130,22 @@ plt.title('Difference in performance after Ep.1 with/without pretraining')
 plt.plot(xAxis,np.zeros(len(xAxis)),'--',c='grey')
 plt.scatter(np.arange(M),allDf['derma_pt']['test_00']-allDf['derma']['test_00'], label='Ep.1',marker='^')
 #plt.xticks('')
-plt.ylim([-0.1,0.25])
+#plt.ylim([-0.1,0.25])
 
-ax = fig.add_subplot(gs[1,:])
-plt.title('Difference in performance after Ep.5 with/without pretraining')
-plt.plot(xAxis,np.zeros(len(xAxis)),'--',c='grey')
+#ax = fig.add_subplot(gs[1,:])
+#plt.title('Difference in performance after Ep.5 with/without pretraining')
+#plt.plot(xAxis,np.zeros(len(xAxis)),'--',c='grey')
 
-plt.scatter(np.arange(M), allDf['derma_pt']['test_04']-allDf['derma']['test_04'], label='Ep.5',marker='^')
+#plt.scatter(np.arange(M), allDf['derma_pt']['test_04']-allDf['derma']['test_04'], label='Ep.5',marker='^')
 #plt.xticks('')
-plt.ylim([-0.1,0.25])
+#plt.ylim([-0.1,0.25])
 
-ax = fig.add_subplot(gs[2,:])
-plt.title('Difference in performance after Ep.10 with/without pretraining')
-plt.plot(xAxis,np.zeros(len(xAxis)),'--',c='grey')
-plt.scatter(np.arange(M), allDf['derma_pt']['test_09']-allDf['derma']['test_09'], label='Ep.10',marker='^')
+#ax = fig.add_subplot(gs[2,:])
+#plt.title('Difference in performance after Ep.10 with/without pretraining')
+#plt.plot(xAxis,np.zeros(len(xAxis)),'--',c='grey')
+plt.scatter(np.arange(M), allDf['derma_pt']['test_09']-allDf['derma']['test_09'], label='Ep.10',marker='o',color=colors[4])
 plt.ylim([-0.1,0.25])
+plt.legend()
 #plt.xticks('')
 
 
