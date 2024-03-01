@@ -24,12 +24,13 @@ r = 4
 c = 5
 
 allDf = {}
-for data in ['derma_pt','lidc','derma']:
+for data in ['derma_pt','lidc','lidc_small','derma','derma_small','derma_smallest','pneumonia']:
     sns.set_palette("deep")
 
     print('Processing '+data)
     df = pd.read_csv('model_results_'+data+'.csv')
     df = df[df.memT > 0]
+#    df.loc[:,'num_param'] = np.log(df.loc[:,'num_param'])
     allDf[data] = df
     M = df.shape[0]
     print('Found %d models with data'%M)
@@ -102,8 +103,8 @@ for data in ['derma_pt','lidc','derma']:
     for i in range(10):
         col = 'test_%02d'%i
         plt.scatter(df.model, df[col],label='Ep.%02d'%(i+1),color=colors[i])#,alpha=0.5+(0.5-0.05*i),s=5*(10-i))
-    if 'derma' in data:
-        plt.ylim([0.49,0.91])
+#    if 'derma' in data:
+#    plt.ylim([0.19,0.91])
 
     plt.xticks('')
     plt.legend()
@@ -124,21 +125,22 @@ gs = fig.add_gridspec(r,c)
 
 ax = fig.add_subplot(gs[0,:])
 xAxis = np.arange(M)
-plt.title('Ep.1')
+plt.title('Difference in performance after Ep.1 with/without pretraining')
 plt.plot(xAxis,np.zeros(len(xAxis)),'--',c='grey')
 plt.scatter(np.arange(M),allDf['derma_pt']['test_00']-allDf['derma']['test_00'], label='Ep.1',marker='^')
 #plt.xticks('')
 plt.ylim([-0.1,0.25])
 
 ax = fig.add_subplot(gs[1,:])
-plt.title('Ep.5')
+plt.title('Difference in performance after Ep.5 with/without pretraining')
 plt.plot(xAxis,np.zeros(len(xAxis)),'--',c='grey')
+
 plt.scatter(np.arange(M), allDf['derma_pt']['test_04']-allDf['derma']['test_04'], label='Ep.5',marker='^')
 #plt.xticks('')
 plt.ylim([-0.1,0.25])
 
 ax = fig.add_subplot(gs[2,:])
-plt.title('Ep.10')
+plt.title('Difference in performance after Ep.10 with/without pretraining')
 plt.plot(xAxis,np.zeros(len(xAxis)),'--',c='grey')
 plt.scatter(np.arange(M), allDf['derma_pt']['test_09']-allDf['derma']['test_09'], label='Ep.10',marker='^')
 plt.ylim([-0.1,0.25])
