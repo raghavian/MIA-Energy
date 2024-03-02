@@ -124,7 +124,8 @@ for data in keys:
 
 
     ax = fig.add_subplot(gs[3,:])
-    plt.scatter(df.model, df.num_param)
+#    plt.scatter(df.model, df.num_param)
+    sns.scatterplot(data=df,x='model',y='num_param',style='type')
 
     plt.xticks(rotation=90,fontsize=10)
 
