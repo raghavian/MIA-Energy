@@ -25,15 +25,27 @@ r = 4
 c = 5
 
 allDf = {}
-for data in ['derma_pt','lidc','lidc_small','derma','derma_small','derma_smallest','pneumonia','pneumonia_small']:
+keys = ['derma_pt','lidc','lidc_small','derma',\
+        'derma_small','derma_smallest','pneumonia','pneumonia_small']
+
+models = pd.read_csv('model_names.csv')
+models = models.drop_duplicates('model')
+types = np.unique(models.type.values)
+for t in types:
+    print(('%d '+t)%(np.sum(models.type.values == t)))
+model_names = np.unique(models.model.values)
+
+for data in keys:
     sns.set_palette("deep")
 
     print('Processing '+data)
     df = pd.read_csv('model_results_'+data+'.csv')
     df = df[df.memT > 0]
+    df = df.drop_duplicates('model')
 #    df.loc[:,'num_param'] = np.log(df.loc[:,'num_param'])
     allDf[data] = df
     M = df.shape[0]
+    df[list(models.columns)[1:-1]] = models.iloc[:,1:-1]
     print('Found %d models with data'%M)
 
     plt.clf()
@@ -43,23 +55,23 @@ for data in ['derma_pt','lidc','lidc_small','derma','derma_small','derma_smalles
     ax = fig.add_subplot(gs[0,0])
     plt.title(data)
     plt.subplot(r,c,1)
-    sns.scatterplot(data=df,x='num_param',y='train_time')
+    sns.scatterplot(data=df,x='num_param',y='train_time',hue='type')
     plt.title('tr.time vs # param.')
 
     plt.subplot(r,c,2)
-    sns.scatterplot(data=df,x='num_param',y='energy')
+    sns.scatterplot(data=df,x='num_param',y='energy',hue='type')
     plt.title('energy vs # param')
 
     plt.subplot(r,c,3)
-    sns.scatterplot(data=df,x='energy',y='train_time')
+    sns.scatterplot(data=df,x='energy',y='train_time',hue='type')
     plt.title('tr.time vs energy')
 
     plt.subplot(r,c,4)
-    sns.scatterplot(data=df,x='energy',y='memR')
+    sns.scatterplot(data=df,x='energy',y='memR',hue='type')
     plt.title('mem vs energy')
 
     plt.subplot(r,c,5)
-    sns.scatterplot(data=df,x='energy',y='inf_time')
+    sns.scatterplot(data=df,x='energy',y='inf_time',hue='type')
     plt.title('Inf. time vs Energy')
 
 
