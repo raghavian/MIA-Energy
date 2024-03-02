@@ -111,26 +111,66 @@ plt.savefig('pretraining.pdf',dpi=300)
 
 plt.clf()
 # Create a ScalarMappable to map displacement magnitudes to colors
-disp_mag = derma_pt.test_09.values-derma_npt.test_09.values
+disp_mag = (derma_pt.test_09.values-derma_npt.test_09.values)/derma_npt.test_09.values * 100
 disp_mag[disp_mag.argmin()] = 0
-norm = Normalize(vmin=min(disp_mag), vmax=max(disp_mag))
-cmap = plt.cm.viridis  # You can use any colormap you prefer
-sm = ScalarMappable(cmap=cmap, norm=norm)
-sm.set_array([])
 
-plt.figure(figsize=(10,5))
-#sns.scatterplot(y=perf,x=xAxis,hue=models.type,style=models.efficient,s=ms)
-#sns.scatterplot(y=PeN,x=xAxis,hue=models.type,style=models.efficient,s=ms)
+plt.figure(figsize=(10,4))
+colorIdx = models.type.values == 'CNN'
+colors = np.empty(len(xAxis),dtype=object)
+colors[~colorIdx] = 'tab:orange'
+colors[colorIdx] = 'tab:blue'
+plt.bar(x=np.arange(len(xAxis)),height=disp_mag, color=colors) 
 
-# Plot the displacement vectors with colors based on displacement magnitudes
-for i in range(len(xAxis)):
-    plt.arrow(i, 0,
-              0, disp_mag[i],
-              head_width=0.08, head_length=0.005,linewidth=2,
-              color=cmap(norm(disp_mag[i])))
+plt.plot(colorIdx[colorIdx][0],disp_mag[colorIdx][0],label='CNN',linewidth=4)
+plt.plot(colorIdx[~colorIdx][0],disp_mag[~colorIdx][0],label='Other',linewidth=4)
 
-plt.plot(xAxis,np.zeros(len(xAxis)),markersize=0.01)
-
+plt.legend()
+plt.xlabel('Model indices (sorted in increasing no. of parameters)')
+plt.ylabel('$\Delta P$/$P_{0}$%')
+plt.tight_layout()
 plt.savefig('pretraining_displacement.pdf',dpi=300)
+
+plt.clf()
+# Create a ScalarMappable to map displacement magnitudes to colors
+
+plt.figure(figsize=(10,4))
+colorIdx = models.type.values == 'CNN'
+colors = np.empty(len(xAxis),dtype=object)
+colors[~colorIdx] = 'tab:orange'
+colors[colorIdx] = 'tab:blue'
+disp = allDf.loc[allDf.dataset=='derma','test_09'].values - allDf.loc[allDf.dataset=='derma_small','test_09'].values
+plt.bar(x=np.arange(len(xAxis)),height=disp, color=colors) 
+#plt.bar(x=np.arange(len(xAxis)),height=allDf.loc[allDf.dataset=='derma_small','test_09'], color=colors) 
+plt.plot(colorIdx[colorIdx][0],disp[colorIdx][0],label='CNN',linewidth=4)
+plt.plot(colorIdx[~colorIdx][0],disp[~colorIdx][0],label='Other',linewidth=4)
+
+
+plt.legend()
+plt.xlabel('Model indices (sorted in increasing no. of parameters)')
+plt.ylabel('$\Delta P$/$P_{0}$%')
+plt.tight_layout()
+plt.savefig('dataset_displacement.pdf',dpi=300)
+
+plt.figure(figsize=(6,5))
+colorIdx = models.type.values == 'CNN'
+colors = np.empty(len(xAxis),dtype=object)
+colors[~colorIdx] = 'tab:orange'
+colors[colorIdx] = 'tab:blue'
+
+for d in ['derma','pneumonia','lidc']:
+    plt.clf()
+    newDf = models
+    newDf['small','full'] = 0
+    newDf.loc[:,'small'] = allDf.loc[allDf.dataset==d+'_small','test_09'].values 
+    newDf.loc[:,'full'] =  allDf.loc[allDf.dataset==d,'test_09'].values
+    sns.scatterplot(data=newDf,x='small',y='full',hue='type',style='efficient')
+
+    #plt.legend()
+    #plt.xlabel('Model indices (sorted in increasing no. of parameters)')
+    #plt.ylabel('$\Delta P$/$P_{0}$%')
+    plt.tight_layout()
+    plt.savefig('dataset_size_'+d+'.pdf',dpi=300)
+
+
 
 
