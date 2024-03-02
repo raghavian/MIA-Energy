@@ -24,6 +24,7 @@ params = {'font.size': 14,
 matplotlib.rcParams.update(params)
 
 ms = 50
+alpha = 1.0
 allDf = pd.read_csv('all_results.csv')
 allDf['cnn'] = allDf.type == 'CNN'
 models = pd.read_csv('model_names.csv')
@@ -39,7 +40,7 @@ PeN = perf/(1+en)
 
 plt.figure(figsize=(12,5.5))
 plt.subplot(121)
-sns.scatterplot(y=perf,x=np.log10(tmp.num_param),hue=models.type,style=models.efficient,s=ms)
+sns.scatterplot(y=perf,x=np.log10(tmp.num_param),hue=models.type,style=models.efficient,s=ms,alpha=alpha)
 plt.grid(axis='y')
 #plt.ylim([perf.min()*0.9,1.05])
 plt.ylim([0.45,1.05])
@@ -58,36 +59,16 @@ plt.ylabel('PeN-score')
 plt.tight_layout()
 plt.savefig('pen_score.pdf',dpi=300)
 
-if 0:
-    plt.clf()
-    # Create a ScalarMappable to map displacement magnitudes to colors
-    xAxis = np.log10(tmp.num_param)
-    displacement_magnitudes = np.abs(perf-PeN)
-    norm = Normalize(vmin=min(displacement_magnitudes), vmax=max(displacement_magnitudes))
-    cmap = plt.cm.viridis  # You can use any colormap you prefer
-    sm = ScalarMappable(cmap=cmap, norm=norm)
-    sm.set_array([])
+xAxis = np.log10(models.num_param)
 
-    plt.figure(figsize=(6,5))
-    #sns.scatterplot(y=perf,x=xAxis,hue=models.type,style=models.efficient,s=ms)
-    #sns.scatterplot(y=PeN,x=xAxis,hue=models.type,style=models.efficient,s=ms)
-
-    # Plot the displacement vectors with colors based on displacement magnitudes
-    for i in range(len(xAxis)):
-        plt.arrow(xAxis[i], perf[i],
-                  0, (perf[i]-PeN[i]),
-                  head_width=0.01, head_length=0.01,linewidth=0.1,
-                  color=cmap(norm(displacement_magnitudes[i])))
-
-    plt.savefig('displacement.pdf',dpi=300)
-    plt.clf()
-    plt.figure(figsize=(6,5))
-    sns.scatterplot(y=tmp.energy/tmp.energy.max(),x=np.log10(tmp.num_param),hue=models.type,style=models.efficient,s=ms)
-    plt.xlabel('Number of trainable parameters (log$_{10}$)')
-    plt.ylabel('Energy consumption (kWh)')
-    plt.grid()
-    plt.tight_layout()
-    plt.savefig('models.pdf',dpi=300)
+plt.clf()
+plt.figure(figsize=(6,5))
+sns.scatterplot(y=tmp.energy/tmp.energy.max(),x=np.log10(tmp.num_param),hue=models.type,style=models.efficient,s=ms)
+plt.xlabel('Number of trainable parameters (log$_{10}$)')
+plt.ylabel('Energy consumption (kWh)')
+plt.grid()
+plt.tight_layout()
+plt.savefig('models.pdf',dpi=300)
 
 plt.clf()
 plt.figure(figsize=(6,5))
@@ -125,6 +106,31 @@ plt.grid(axis='y')
 plt.xlabel('Number of trainable parameters (log$_{10}$)')
 plt.ylabel('PeN-score')
 plt.tight_layout()
+
 plt.savefig('pretraining.pdf',dpi=300)
+
+plt.clf()
+# Create a ScalarMappable to map displacement magnitudes to colors
+disp_mag = derma_pt.test_09.values-derma_npt.test_09.values
+disp_mag[disp_mag.argmin()] = 0
+norm = Normalize(vmin=min(disp_mag), vmax=max(disp_mag))
+cmap = plt.cm.viridis  # You can use any colormap you prefer
+sm = ScalarMappable(cmap=cmap, norm=norm)
+sm.set_array([])
+
+plt.figure(figsize=(10,5))
+#sns.scatterplot(y=perf,x=xAxis,hue=models.type,style=models.efficient,s=ms)
+#sns.scatterplot(y=PeN,x=xAxis,hue=models.type,style=models.efficient,s=ms)
+
+# Plot the displacement vectors with colors based on displacement magnitudes
+for i in range(len(xAxis)):
+    plt.arrow(i, 0,
+              0, disp_mag[i],
+              head_width=0.08, head_length=0.005,linewidth=2,
+              color=cmap(norm(disp_mag[i])))
+
+plt.plot(xAxis,np.zeros(len(xAxis)),markersize=0.01)
+
+plt.savefig('pretraining_displacement.pdf',dpi=300)
 
 
