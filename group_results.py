@@ -22,28 +22,30 @@ params = {'font.size': 14,
           'legend.fontsize': 14,
          }
 matplotlib.rcParams.update(params)
-
+#c1 = 'tab:olive'
+#c2 = 'tab:green'
 ms = 50
 alpha = 1.0
-allDf = pd.read_csv('all_results.csv')
+allDf = pd.read_csv('data/all_results.csv')
 allDf['cnn'] = allDf.type == 'CNN'
-models = pd.read_csv('model_names.csv')
+models = pd.read_csv('data/model_names.csv')
 models = models.drop_duplicates('model').reset_index()
 datasets = ['derma_pt','lidc','lidc_small','derma', \
         'derma_small','derma_smallest','pneumonia','pneumonia_small']
 
 #models = allDf.model.unique()
 tmp = allDf.groupby('model').mean().reset_index()
-perf = tmp.test_09/tmp.test_09.max()
+perf = tmp.test_09#/tmp.test_09.max()
 en = tmp.energy/tmp.energy.max()
 PeN = perf/(1+en) 
 
+#sns.set_palette("colorblind")
 plt.figure(figsize=(12,5.5))
 plt.subplot(121)
 sns.scatterplot(y=perf,x=np.log10(tmp.num_param),hue=models.type,style=models.efficient,s=ms,alpha=alpha)
 plt.grid(axis='y')
 #plt.ylim([perf.min()*0.9,1.05])
-plt.ylim([0.45,1.05])
+plt.ylim([0.3,0.85])
 plt.xlabel('Number of trainable parameters (log$_{10}$)')
 plt.ylabel('Performance')
 plt.tight_layout()
@@ -51,13 +53,14 @@ plt.tight_layout()
 
 plt.subplot(122)
 sns.scatterplot(y=PeN,x=np.log10(tmp.num_param),hue=models.type,style=models.efficient,s=ms)
-plt.ylim([0.45,1.05])
+plt.ylim([0.3,0.85])
+#plt.ylim([0.45,1.05])
 plt.grid(axis='y')
 #plt.ylim([PeN.min()*0.9,1.05])
 plt.xlabel('Number of trainable parameters (log$_{10}$)')
 plt.ylabel('PeN-score')
 plt.tight_layout()
-plt.savefig('pen_score.pdf',dpi=300)
+plt.savefig('results/pen_score.pdf',dpi=300)
 
 xAxis = np.log10(models.num_param)
 
@@ -68,7 +71,7 @@ plt.xlabel('Number of trainable parameters (log$_{10}$)')
 plt.ylabel('Energy consumption (kWh)')
 plt.grid()
 plt.tight_layout()
-plt.savefig('models.pdf',dpi=300)
+plt.savefig('results/models.pdf',dpi=300)
 
 plt.clf()
 plt.figure(figsize=(6,5))
@@ -77,7 +80,7 @@ plt.xlabel('Number of trainable parameters (log$_{10}$)')
 plt.ylabel('PeN-score')
 plt.grid(axis='y')
 plt.tight_layout()
-plt.savefig('pen_score_01.pdf',dpi=300)
+plt.savefig('results/pen_score_01.pdf',dpi=300)
 
 plt.clf()
 derma_pt = allDf.loc[allDf.dataset=='derma_pt'].reset_index()
@@ -96,7 +99,7 @@ plt.xlabel('Number of trainable parameters (log$_{10}$)')
 plt.ylabel('Performance difference w/without pretraining')
 plt.tight_layout()
 #plt.clf()
-perf = (perf - perf.min())/(perf.max()-perf.min())
+#perf = (perf - perf.min())/(perf.max()-perf.min())
 PeN = perf/(1+en)
 plt.subplot(122)
 sns.scatterplot(y=PeN,x=np.log10(tmp.num_param),hue=models.type,style=models.efficient,s=ms)
@@ -107,7 +110,7 @@ plt.xlabel('Number of trainable parameters (log$_{10}$)')
 plt.ylabel('PeN-score')
 plt.tight_layout()
 
-plt.savefig('pretraining.pdf',dpi=300)
+plt.savefig('results/pretraining.pdf',dpi=300)
 
 plt.clf()
 # Create a ScalarMappable to map displacement magnitudes to colors
@@ -128,7 +131,7 @@ plt.legend()
 plt.xlabel('Model indices (sorted in increasing no. of parameters)')
 plt.ylabel('$\Delta P$/$P_{0}$%')
 plt.tight_layout()
-plt.savefig('pretraining_displacement.pdf',dpi=300)
+plt.savefig('results/pretraining_displacement.pdf',dpi=300)
 
 plt.clf()
 # Create a ScalarMappable to map displacement magnitudes to colors
@@ -149,7 +152,7 @@ plt.legend()
 plt.xlabel('Model indices (sorted in increasing no. of parameters)')
 plt.ylabel('$\Delta P$/$P_{0}$%')
 plt.tight_layout()
-plt.savefig('dataset_displacement.pdf',dpi=300)
+plt.savefig('results/dataset_displacement.pdf',dpi=300)
 
 plt.figure(figsize=(6,5))
 colorIdx = models.type.values == 'CNN'
@@ -169,8 +172,22 @@ for d in ['derma','pneumonia','lidc']:
     #plt.xlabel('Model indices (sorted in increasing no. of parameters)')
     #plt.ylabel('$\Delta P$/$P_{0}$%')
     plt.tight_layout()
-    plt.savefig('dataset_size_'+d+'.pdf',dpi=300)
+    plt.savefig('results/dataset_size_'+d+'.pdf',dpi=300)
 
 
+### Density plot for PeN score
 
+x = np.linspace(0,1,10)
+y = np.linspace(0,1,10)
+
+P, E = np.meshgrid(x,y)
+PeN = P/(1+E)
+pdb.set_trace()
+plt.figure(figsize=(6,5))
+plt.contourf(E,P,PeN)#,cmap='RdGy')
+plt.colorbar(label='PeN-score');
+plt.xlabel('Normalized Energy Unit, $E_n$')
+plt.ylabel('Performance metric, P')
+plt.tight_layout()
+plt.savefig('results/pen_profile.pdf',dpi=300)
 
