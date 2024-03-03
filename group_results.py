@@ -138,14 +138,26 @@ plt.clf()
 
 plt.figure(figsize=(10,4))
 colorIdx = models.type.values == 'CNN'
+mrkrIdx = models.efficient.values == 1
 colors = np.empty(len(xAxis),dtype=object)
+markers = np.empty(len(xAxis),dtype=object)
+
 colors[~colorIdx] = 'tab:orange'
 colors[colorIdx] = 'tab:blue'
+markers[~mrkrIdx] = 'o'
+markers[mrkrIdx] = 'x'
+
 disp = allDf.loc[allDf.dataset=='derma','test_09'].values - allDf.loc[allDf.dataset=='derma_small','test_09'].values
 plt.bar(x=np.arange(len(xAxis)),height=disp, color=colors) 
+[plt.plot(i,disp[i],color='tab:grey',marker=markers[i],markersize=4,linewidth=0.1) for i in range(len(xAxis))]
+
 #plt.bar(x=np.arange(len(xAxis)),height=allDf.loc[allDf.dataset=='derma_small','test_09'], color=colors) 
 plt.plot(colorIdx[colorIdx][0],disp[colorIdx][0],label='CNN',linewidth=4)
 plt.plot(colorIdx[~colorIdx][0],disp[~colorIdx][0],label='Other',linewidth=4)
+
+plt.plot(mrkrIdx[mrkrIdx][0],disp[mrkrIdx][0],label='Eff.(Y)',linewidth=0.1,marker='x',color='tab:grey',markersize=4)
+plt.plot(mrkrIdx[~mrkrIdx][0],disp[~mrkrIdx][0],label='Eff.(N)',linewidth=0.1,marker='o',color='tab:grey',markersize=4)
+
 
 
 plt.legend()
@@ -182,7 +194,6 @@ y = np.linspace(0,1,10)
 
 P, E = np.meshgrid(x,y)
 PeN = P/(1+E)
-pdb.set_trace()
 plt.figure(figsize=(6,5))
 plt.contourf(E,P,PeN)#,cmap='RdGy')
 plt.colorbar(label='PeN-score');

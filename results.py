@@ -28,7 +28,7 @@ allDf = {}
 keys = ['derma_pt','lidc','lidc_small','derma',\
         'derma_small','derma_smallest','pneumonia','pneumonia_small']
 
-models = pd.read_csv('model_names.csv')
+models = pd.read_csv('data/model_names.csv')
 models = models.drop_duplicates('model')
 types = np.unique(models.type.values)
 for t in types:
@@ -39,13 +39,12 @@ for data in keys:
     sns.set_palette("deep")
 
     print('Processing '+data)
-    df = pd.read_csv('model_results_'+data+'.csv')
+    df = pd.read_csv('data/model_results_'+data+'.csv')
     df = df[df.memT > 0]
     df = df.drop_duplicates('model')
-#    df.loc[:,'num_param'] = np.log(df.loc[:,'num_param'])
     allDf[data] = df
     M = df.shape[0]
-    df[list(models.columns)[1:-1]] = models.iloc[:,1:-1]
+    df[['num_param','type','efficient']] = models[['num_param','type','efficient']]#.iloc[:,1:-1]
     print('Found %d models with data'%M)
 
     plt.clf()
@@ -129,9 +128,9 @@ for data in keys:
 
     plt.xticks(rotation=90,fontsize=10)
 
-    plt.savefig('results_'+data+'.pdf',dpi=300)
+    plt.savefig('results/results_'+data+'.pdf',dpi=300)
 
-torch.save(allDf,'allDf.pt')
+torch.save(allDf,'data/allDf.pt')
 ### Combined results
 plt.clf()
 fig = plt.figure(figsize=(r*5,c*3),constrained_layout=True)
@@ -168,7 +167,7 @@ plt.scatter(allDf['derma'].model, allDf['derma']['test_00'],label='Ep.1',marker=
 plt.scatter(allDf['derma_pt'].model, allDf['derma_pt']['test_00'],label='Ep.1',color=colors[4])
 plt.legend()
 plt.xticks(rotation=90,fontsize=10)
-plt.savefig('group_results.pdf',dpi=300)
+plt.savefig('results/group_results.pdf',dpi=300)
 
 
 
