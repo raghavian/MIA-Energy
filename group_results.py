@@ -39,8 +39,10 @@ models = models.drop_duplicates('model').reset_index()
 datasets = ['derma_pt','lidc','lidc_small','derma', \
         'derma_small','derma_smallest','pneumonia','pneumonia_small']
 
-fullDf = allDf[(allDf.dataset == 'derma') | (allDf.dataset == 'derma_pt') |\
-        (allDf.dataset=='lidc') | (allDf.dataset=='pneumonia')]
+fullDf = pd.read_csv('data/full_data_pepr.csv')
+
+#allDf[(allDf.dataset == 'derma') | (allDf.dataset == 'derma_pt') |\
+#        (allDf.dataset=='lidc') | (allDf.dataset=='pneumonia')]
 
 #models = allDf.model.unique()
 tmp = fullDf.drop(columns=['type','dataset']).groupby('model').mean().reset_index()
