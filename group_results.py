@@ -26,17 +26,26 @@ matplotlib.rcParams.update(params)
 #c2 = 'tab:green'
 ms = 50
 alpha = 1.0
+
+
+def standardize(arr):
+    return (arr-arr.min())/(arr.max()-arr.min())
+
 allDf = pd.read_csv('data/all_results.csv')
+
 allDf['cnn'] = allDf.type == 'CNN'
 models = pd.read_csv('data/model_names.csv')
 models = models.drop_duplicates('model').reset_index()
 datasets = ['derma_pt','lidc','lidc_small','derma', \
         'derma_small','derma_smallest','pneumonia','pneumonia_small']
 
+fullDf = allDf[(allDf.dataset == 'derma') | (allDf.dataset == 'derma_pt') |\
+        (allDf.dataset=='lidc') | (allDf.dataset=='pneumonia')]
+
 #models = allDf.model.unique()
-tmp = allDf.groupby('model').mean().reset_index()
-perf = tmp.test_09#/tmp.test_09.max()
-en = tmp.energy/tmp.energy.max()
+tmp = fullDf.drop(columns=['type','dataset']).groupby('model').mean().reset_index()
+perf = tmp.best_test#/tmp.test_09.max()
+en = standardize(tmp.energy_conv.values)#(tmp.energy-tmp.energy.min())/(tmp.energy.max()-tmp.energy.min())
 PeN = perf/(1+en) 
 
 #sns.set_palette("colorblind")
@@ -82,7 +91,7 @@ plt.clf()
 derma_pt = allDf.loc[allDf.dataset=='derma_pt'].reset_index()
 derma_npt = allDf.loc[allDf.dataset=='derma'].reset_index()
 
-perf = derma_pt.test_00.values - derma_npt.test_00.values
+perf = derma_pt.best_test.values - derma_npt.best_test.values
 plt.figure(figsize=(12,5.5))
 plt.subplot(121)
 sns.scatterplot(y=perf,x=np.log10(derma_npt.num_param),\
@@ -115,36 +124,36 @@ plt.savefig('results/pretraining.pdf',dpi=300)
 plt.clf()
 #perf = (perf - perf.min())/(perf.max()-perf.min())
 plt.figure(figsize=(16,6))
-c_n = tmp.co2/tmp.co2.max()
-perf = tmp.test_09.values
+c_n = standardize(tmp.co2_conv.values) #/tmp.co2.max()
+perf = tmp.best_test.values
 pepr_c = perf/(1+c_n)
 plt.subplot(131)
 sns.scatterplot(y=pepr_c,x=np.log10(tmp.num_param),hue=models.type,style=models.efficient,s=ms)
 plt.grid(axis='y')
-plt.ylim([0.3,0.75])
+plt.ylim([0.3,0.85])
 #plt.ylim([PeN.min()*0.9,1.05])
 plt.xlabel('Number of trainable parameters (log$_{10}$)')
 plt.ylabel('PePR-C score')
 plt.title('a) PePR-C score',y=-0.2)
 
-m_n = tmp.memR/tmp.memR.max()
+m_n = standardize(tmp.memR.values)#/tmp.memR.max()
 pepr_m = perf/(1+m_n)
 plt.subplot(132)
 sns.scatterplot(y=pepr_m,x=np.log10(tmp.num_param),hue=models.type,style=models.efficient,s=ms)
 plt.grid(axis='y')
-plt.ylim([0.3,0.75])
+plt.ylim([0.3,0.85])
 #plt.ylim([-0.1,0.25])
 #plt.ylim([PeN.min()*0.9,1.05])
 plt.xlabel('Number of trainable parameters (log$_{10}$)')
 plt.ylabel('PePR-M score')
 plt.title('b) PePR-M score',y=-0.2)
 
-t_n = tmp.train_time/tmp.train_time.max()
+t_n = standardize(tmp.time_conv.values)#/tmp.train_time.max()
 pepr_t = perf/(1+t_n)
 plt.subplot(133)
 sns.scatterplot(y=pepr_t,x=np.log10(tmp.num_param),hue=models.type,style=models.efficient,s=ms)
 plt.grid(axis='y')
-plt.ylim([0.3,0.75])
+plt.ylim([0.3,0.85])
 #plt.ylim([-0.1,0.25])
 #plt.ylim([PeN.min()*0.9,1.05])
 plt.xlabel('Number of trainable parameters (log$_{10}$)')
@@ -159,7 +168,7 @@ plt.savefig('results/pepr.pdf',dpi=300)
 
 plt.clf()
 # Create a ScalarMappable to map displacement magnitudes to colors
-disp_mag = (derma_pt.test_09.values-derma_npt.test_09.values)/derma_npt.test_09.values * 100
+disp_mag = (derma_pt.best_test.values-derma_npt.best_test.values)/derma_npt.best_test.values * 100
 disp_mag[disp_mag.argmin()] = 0
 
 plt.figure(figsize=(10,4))
@@ -183,9 +192,9 @@ plt.plot(mrkrIdx[~mrkrIdx][0],disp_mag[~mrkrIdx][0],label='Eff.(N)',linewidth=0.
 
 plt.grid(axis='y')
 
-plt.legend()
 plt.xlabel('Model indices (sorted in increasing no. of parameters)')
 plt.ylabel('$\Delta P$/$P_{0}$%')
+plt.legend(bbox_to_anchor=(.95,0.8))
 plt.tight_layout()
 plt.savefig('results/pretraining_displacement.pdf',dpi=300)
 
@@ -194,7 +203,7 @@ plt.clf()
 
 plt.figure(figsize=(10,4))
 
-disp = allDf.loc[allDf.dataset=='derma','test_09'].values - allDf.loc[allDf.dataset=='derma_small','test_09'].values
+disp = allDf.loc[allDf.dataset=='derma','best_test'].values - allDf.loc[allDf.dataset=='derma_small','best_test'].values
 plt.bar(x=np.arange(len(xAxis)),height=disp, color=colors) 
 [plt.plot(i,disp[i],color='black',alpha=0.7,marker=markers[i],markersize=4,linewidth=0.1) for i in range(len(xAxis))]
 
@@ -217,8 +226,8 @@ plt.savefig('results/dataset_displacement.pdf',dpi=300)
 plt.figure(figsize=(10,4))
 
 plt.grid(axis='y')
-perf100 = allDf.loc[allDf.dataset=='derma','test_09'].values 
-perf10  = allDf.loc[allDf.dataset=='derma_small','test_09'].values
+perf100 = allDf.loc[allDf.dataset=='derma','best_test'].values 
+perf10  = allDf.loc[allDf.dataset=='derma_small','best_test'].values
 
 plt.bar(x=np.arange(len(xAxis)),height=perf100, color=colors,linewidth=4,alpha=0.5) 
 plt.bar(x=np.arange(len(xAxis)),height=perf10, color=colors,linewidth=4) 
@@ -251,8 +260,8 @@ for d in ['derma','pneumonia','lidc']:
     plt.clf()
     newDf = models
     newDf['small','full'] = 0
-    newDf.loc[:,'small'] = allDf.loc[allDf.dataset==d+'_small','test_09'].values 
-    newDf.loc[:,'full'] =  allDf.loc[allDf.dataset==d,'test_09'].values
+    newDf.loc[:,'small'] = allDf.loc[allDf.dataset==d+'_small','best_test'].values 
+    newDf.loc[:,'full'] =  allDf.loc[allDf.dataset==d,'best_test'].values
     sns.scatterplot(data=newDf,x='small',y='full',hue='type',style='efficient')
 
     #plt.legend()
@@ -280,7 +289,7 @@ plt.title('a) Idealized PePR-E scores.',y=-0.25)
 #plt.clf()
 #plt.figure(figsize=(6,5))
 plt.subplot(122)
-sns.scatterplot(y=tmp.energy/tmp.energy.max(),x=np.log10(tmp.num_param),hue=models.type,style=models.efficient,s=ms)
+sns.scatterplot(y=tmp.energy_conv/tmp.energy_conv.max(),x=np.log10(tmp.num_param),hue=models.type,style=models.efficient,s=ms)
 plt.xlabel('Number of trainable parameters (log$_{10}$)')
 plt.ylabel('Energy consumption (kWh)')
 plt.grid()
