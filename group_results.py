@@ -17,7 +17,7 @@ params = {'font.size': 14,
 #          'font.weight': 'bold',
           'axes.labelsize':14,
           'axes.titlesize':14,
-          'axes.labelweight':'bold',
+#          'axes.labelweight':'bold',
           'axes.titleweight':'bold',
           'legend.fontsize': 14,
          }
@@ -48,6 +48,7 @@ plt.grid(axis='y')
 plt.ylim([0.3,0.85])
 plt.xlabel('Number of trainable parameters (log$_{10}$)')
 plt.ylabel('Performance')
+plt.title('a) Test performance vs number of parameters',y=-0.25)
 plt.tight_layout()
 #plt.clf()
 
@@ -59,6 +60,8 @@ plt.grid(axis='y')
 #plt.ylim([PeN.min()*0.9,1.05])
 plt.xlabel('Number of trainable parameters (log$_{10}$)')
 plt.ylabel('PePR-E score')
+plt.title('b) PePR-E score vs number of parameters',y=-0.25)
+
 plt.tight_layout()
 plt.savefig('results/pen_score.pdf',dpi=300)
 
@@ -72,6 +75,8 @@ plt.ylabel('PePR-E score')
 plt.grid(axis='y')
 plt.tight_layout()
 plt.savefig('results/pen_score_01.pdf',dpi=300)
+
+### Pretraining influence
 
 plt.clf()
 derma_pt = allDf.loc[allDf.dataset=='derma_pt'].reset_index()
@@ -88,7 +93,8 @@ plt.ylim([-0.1,0.25])
 
 plt.xlabel('Number of trainable parameters (log$_{10}$)')
 plt.ylabel('$\Delta P$ w/without pretraining')
-plt.tight_layout()
+plt.title('a) Influence of pretraining on performance',y=-0.25)
+
 #plt.clf()
 #perf = (perf - perf.min())/(perf.max()-perf.min())
 PeN = perf/(1+en)
@@ -98,10 +104,58 @@ plt.grid(axis='y')
 #plt.ylim([-0.1,0.25])
 #plt.ylim([PeN.min()*0.9,1.05])
 plt.xlabel('Number of trainable parameters (log$_{10}$)')
-plt.ylabel('PeN-score')
+plt.ylabel('PePR-E score')
+plt.title('b) Influence of pretraining on PePR-E score',y=-0.25)
+
 plt.tight_layout()
 
 plt.savefig('results/pretraining.pdf',dpi=300)
+
+## PePR-C,M scores
+plt.clf()
+#perf = (perf - perf.min())/(perf.max()-perf.min())
+plt.figure(figsize=(16,6))
+c_n = tmp.co2/tmp.co2.max()
+perf = tmp.test_09.values
+pepr_c = perf/(1+c_n)
+plt.subplot(131)
+sns.scatterplot(y=pepr_c,x=np.log10(tmp.num_param),hue=models.type,style=models.efficient,s=ms)
+plt.grid(axis='y')
+plt.ylim([0.3,0.75])
+#plt.ylim([PeN.min()*0.9,1.05])
+plt.xlabel('Number of trainable parameters (log$_{10}$)')
+plt.ylabel('PePR-C score')
+plt.title('a) PePR-C score',y=-0.2)
+
+m_n = tmp.memR/tmp.memR.max()
+pepr_m = perf/(1+m_n)
+plt.subplot(132)
+sns.scatterplot(y=pepr_m,x=np.log10(tmp.num_param),hue=models.type,style=models.efficient,s=ms)
+plt.grid(axis='y')
+plt.ylim([0.3,0.75])
+#plt.ylim([-0.1,0.25])
+#plt.ylim([PeN.min()*0.9,1.05])
+plt.xlabel('Number of trainable parameters (log$_{10}$)')
+plt.ylabel('PePR-M score')
+plt.title('b) PePR-M score',y=-0.2)
+
+t_n = tmp.train_time/tmp.train_time.max()
+pepr_t = perf/(1+t_n)
+plt.subplot(133)
+sns.scatterplot(y=pepr_t,x=np.log10(tmp.num_param),hue=models.type,style=models.efficient,s=ms)
+plt.grid(axis='y')
+plt.ylim([0.3,0.75])
+#plt.ylim([-0.1,0.25])
+#plt.ylim([PeN.min()*0.9,1.05])
+plt.xlabel('Number of trainable parameters (log$_{10}$)')
+plt.ylabel('PePR-T score')
+plt.title('c) PePR-T score',y=-0.2)
+
+plt.tight_layout()
+
+plt.savefig('results/pepr.pdf',dpi=300)
+
+
 
 plt.clf()
 # Create a ScalarMappable to map displacement magnitudes to colors
@@ -210,7 +264,7 @@ for d in ['derma','pneumonia','lidc']:
 
 ### Density plot for PeN score
 plt.clf()
-plt.figure(figsize=(6,10))
+plt.figure(figsize=(12,5))
 plt.subplot(121)
 x = np.linspace(0,1,10)
 y = np.linspace(0,1,10)
@@ -221,7 +275,7 @@ plt.contourf(E,P,PeN,levels=10)#,cmap='RdGy')
 plt.colorbar(label='PePR-E score');
 plt.xlabel('Normalized Energy Unit, $E_n$')
 plt.ylabel('Performance metric, P')
-
+plt.title('a) Idealized PePR-E scores.',y=-0.25)
 ### Model space
 #plt.clf()
 #plt.figure(figsize=(6,5))
@@ -230,6 +284,7 @@ sns.scatterplot(y=tmp.energy/tmp.energy.max(),x=np.log10(tmp.num_param),hue=mode
 plt.xlabel('Number of trainable parameters (log$_{10}$)')
 plt.ylabel('Energy consumption (kWh)')
 plt.grid()
+plt.title('b) Model space.',y=-0.25)
 plt.tight_layout()
 plt.savefig('results/models_pepr.pdf',dpi=300)
 
