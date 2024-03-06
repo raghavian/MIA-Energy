@@ -54,7 +54,7 @@ plt.xticks(rotation=90,fontsize=12)
 plt.xlabel('')
 plt.ylabel('No. of publications \n per capita (x $10^6$)')
 dark_patch = mpatches.Patch(color='tab:gray', alpha=0.95,label='2013 (dark)')
-light_patch = mpatches.Patch(color='tab:gray',alpha=0.5, label='2023 (light)')
+light_patch = mpatches.Patch(color='tab:gray',alpha=0.5, label='2022 (light)')
 
 
 plt.legend(handles=[dark_patch,light_patch],fontsize=10)
