@@ -40,7 +40,6 @@ meanDf23 = meanDf23.set_index('Region_updated')
 meanDf23['pub_pop'] = meanDf23.num_papers/meanDf23['pop']*1e6
 meanDf23['year'] = 2022
 
-pdb.set_trace()
 meanDf = pd.concat((meanDf13,meanDf23),axis=0)
 
 plt.figure(figsize=(6,5))
@@ -50,7 +49,7 @@ sns.set_palette('viridis')
 sns.barplot(meanDf23[['pub_pop']].T,alpha=0.5)
 sns.barplot(meanDf13[['pub_pop']].T,alpha=0.95)
 #sns.barplot(meanDf.T,hue='year')
-plt.xticks(rotation=90,fontsize=12)
+plt.xticks(rotation=45,fontsize=10,ha='right',rotation_mode='anchor')
 plt.xlabel('')
 plt.ylabel('No. of publications \n per capita (x $10^6$)')
 dark_patch = mpatches.Patch(color='tab:gray', alpha=0.95,label='2013 (dark)')
